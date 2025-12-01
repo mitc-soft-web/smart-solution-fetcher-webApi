@@ -1,4 +1,4 @@
-﻿namespace MITC_Smart_Solution.Interface
+﻿namespace MITC_Smart_Solution.SearchSolutionAPI
 {
     public interface ISmartSolutionGeneratorService
     {

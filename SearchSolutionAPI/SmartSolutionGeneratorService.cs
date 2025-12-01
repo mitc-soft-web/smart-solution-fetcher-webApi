@@ -1,10 +1,9 @@
-﻿using MITC_Smart_Solution.Interface;
-using MITC_Smart_Solution.Persistence;
+﻿using MITC_Smart_Solution.Infrastructure;
 using System.Net.Http.Headers;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
 
-namespace MITC_Smart_Solution.Implementation
+namespace MITC_Smart_Solution.SearchSolutionAPI
 {
     public class SmartSolutionGeneratorService(HttpClient httpClient, 
         IConfiguration configuration) : ISmartSolutionGeneratorService
@@ -22,13 +21,12 @@ namespace MITC_Smart_Solution.Implementation
                 var tasks = new List<Task<object>>()
                 {
                     SafeFetch(() => StackOverflow(query)),
-                    //SafeFetch(() => GithubRepos(query)),
+                    SafeFetch(() => GithubRepos(query)),
                     SafeFetch(() => GithubGists(query)),
                     SafeFetch(() => DevTo(query)),
                     SafeFetch(() => NugetPackages(query)),
                     SafeFetch(() => NpmPackages(query)),
                     SafeFetch(() => YouTube(query)),
-                    // SafeFetch(() => LinkedInJobs(query))
                 };
 
                 var resultsArray = await Task.WhenAll(tasks);
@@ -58,31 +56,31 @@ namespace MITC_Smart_Solution.Implementation
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("mitc-smart-solution");
             return await _httpClient.GetFromJsonAsync<object?>($"{url}={q}&site=stackoverflow");
         }
-       
 
-        //private async Task<object> GithubRepos(string q)
-        //{
-        //    var baseUrl = _configuration["MITCSmartSolution:SmartSolutionUrls:GithubRepos"];
-        //    string githubTokenKey = _configuration["MITCSmartSolution:GithubTokenKey"];
 
-        //    string safeQuery = _queryNormalizer.NormalizeForGithub(q);
+        private async Task<object> GithubRepos(string q)
+        {
+            var baseUrl = _configuration["MITCSmartSolution:SmartSolutionUrls:GithubRepos"];
+            string githubTokenKey = _configuration["MITCSmartSolution:GithubTokenKey"];
 
-        //    _httpClient.DefaultRequestHeaders.UserAgent.Clear();
-        //    _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("mitc-smart-solution");
+            string safeQuery = _queryNormalizer.NormalizeForGithub(q);
 
-        //    if (!string.IsNullOrWhiteSpace(githubTokenKey))
-        //    {
-        //        _httpClient.DefaultRequestHeaders.Authorization =
-        //            new AuthenticationHeaderValue("Bearer", githubTokenKey);
-        //    }
+            _httpClient.DefaultRequestHeaders.UserAgent.Clear();
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("mitc-smart-solution");
 
-        //    string url = $"{baseUrl}?q={Uri.EscapeDataString(safeQuery)}";
+            if (!string.IsNullOrWhiteSpace(githubTokenKey))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", githubTokenKey);
+            }
 
-        //    var response = await _httpClient.GetAsync(url);
-        //    response.EnsureSuccessStatusCode();
+            string url = $"{baseUrl}?q={Uri.EscapeDataString(safeQuery)}";
 
-        //    return await response.Content.ReadFromJsonAsync<object>();
-        //}
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<object>();
+        }
 
         private async Task<object> GithubGists(string q)
         {
@@ -143,12 +141,6 @@ namespace MITC_Smart_Solution.Implementation
             return await _httpClient.GetFromJsonAsync<object>($"{url}={q}&key={youtubeApiKey}");
         }
 
-        //private async Task<object> LinkedInJobs(string q)
-        //{
-        //    string linkedInApiKey = _configuration["MITCSmartSolution:LinkedInApiKey"];
-        //    _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("mitc-smart-solution");
-        //    return new { message = "LinkedIn Jobs API requires OAuth. Provide token.", query = q };
-        //}
 
         private async Task<object> DuckDuckGo(string q)
         {

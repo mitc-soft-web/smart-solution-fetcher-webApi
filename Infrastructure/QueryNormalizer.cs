@@ -1,4 +1,4 @@
-﻿namespace MITC_Smart_Solution.Persistence
+﻿namespace MITC_Smart_Solution.Infrastructure
 {
     public class QueryNormalizer
     {

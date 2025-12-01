@@ -1,9 +1,15 @@
+using AspNetCoreRateLimit;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MITC_Smart_Solution.Context;
-using MITC_Smart_Solution.Implementation;
-using MITC_Smart_Solution.Interface;
-using MITC_Smart_Solution.Persistence;
+using MITC_Smart_Solution.Implementation.Repositories;
+using MITC_Smart_Solution.Implementation.Services;
+using MITC_Smart_Solution.Infrastructure;
+using MITC_Smart_Solution.Interface.Repositories;
+using MITC_Smart_Solution.Interface.Services;
+using MITC_Smart_Solution.SearchSolutionAPI;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,9 +18,34 @@ var builder = WebApplication.CreateBuilder(args);
 SQLitePCL.Batteries.Init();
 
 builder.Services.AddDbContext<SmartSolutionContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("SmartSolution"))).AddMemoryCache();
+    options.UseSqlite(builder.Configuration.GetConnectionString("SmartSolution")))
+     .AddMemoryCache();
+
+builder.Services.Configure<IpRateLimitOptions>(options =>
+    {
+        options.GeneralRules = new List<RateLimitRule>
+        {
+            new RateLimitRule
+            {
+                Endpoint = "",
+                Limit = 100,
+                Period = "1m"
+            }
+        };
+    });
+
+
+builder.Services.AddSingleton<IHtmlSanitizer>(_ =>
+    {
+        var sanitizer = new HtmlSanitizer();
+
+        return sanitizer;
+    });
+   
     
 builder.Services.AddScoped<ISmartSolutionGeneratorService, SmartSolutionGeneratorService>();
+builder.Services.AddScoped<ISearchHistoryRepository, SearchHistoryRepository>();
+builder.Services.AddScoped<ISearchHistoryService, SearchHistoryService>();
 builder.Services.AddSingleton<SearchCategorizer>();
 builder.Services.AddSingleton<QueryNormalizer>();
 builder.Services.AddControllers();
